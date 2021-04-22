@@ -1,0 +1,6 @@
+/**/node_modules/
+/library/source/generated/**/*
+generated/
+/**/output*/*
+!**/output-esm/package.json
+!**/output-cjs/package.json

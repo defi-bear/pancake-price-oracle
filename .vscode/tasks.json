@@ -1,0 +1,95 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "docker-compose",
+			"type": "process",
+			"command": "docker-compose.exe",
+			"args": [
+				"up",
+				"--force-recreate",
+				"--always-recreate-deps",
+				"--abort-on-container-exit",
+				"--remove-orphans",
+				"--renew-anon-volumes"
+			],
+			"options": {
+				"cwd": "demo"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "sdk - watch - esm",
+			"type": "npm",
+			"script": "watch-esm",
+			"path": "sdk/",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "npx ttsc --project ./tsconfig-esm.json --watch"
+		},
+		{
+			"label": "sdk - watch - cjs",
+			"type": "npm",
+			"script": "watch-cjs",
+			"path": "sdk/",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "npx ttsc --project ./tsconfig-cjs.json --watch"
+		},
+		{
+			"label": "sdk-adapter - watch - esm",
+			"type": "npm",
+			"script": "watch-esm",
+			"path": "sdk-adapter/",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "npx ttsc --project ./tsconfig-esm.json --watch"
+		},
+		{
+			"label": "sdk-adapter - watch - cjs",
+			"type": "npm",
+			"script": "watch-cjs",
+			"path": "sdk-adapter/",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "npx ttsc --project ./tsconfig-cjs.json --watch"
+		},
+		{
+			"label": "demo - build",
+			"type": "npm",
+			"script": "build",
+			"path": "demo/",
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "npx ts-node --project scripts/tsconfig.json scripts/compile-contracts"
+		},
+		{
+			"label": "sdk - watch",
+			"dependsOn": [
+				"sdk - watch - esm",
+				"sdk - watch - cjs",
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "sdk-adapter - watch",
+			"dependsOn": [
+				"sdk-adapter - watch - esm",
+				"sdk-adapter - watch - cjs",
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "all the things",
+			"dependsOn": [
+				"sdk - watch",
+				"sdk-adapter - watch",
+				"demo - build",
+				"docker-compose",
+			],
+			"problemMatcher": []
+		},
+	]
+}
