@@ -2,5 +2,7 @@
 	"extends": "../tsconfig.json",
 	"compilerOptions": {
 		"module": "CommonJS",
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
 	}
 }
