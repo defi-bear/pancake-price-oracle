@@ -2,37 +2,43 @@ import { Crypto } from '@peculiar/webcrypto'
 ;(global as any).crypto = new Crypto()
 import * as OracleSdk from '@keydonix/uniswap-oracle-sdk'
 import { PriceEmitter } from './generated/price-emitter'
-import { deployAllTheThings } from './deploy-contract'
+import { FetchDependencies } from '@zoltu/solidity-typescript-generator-fetch-dependencies';
 import { createMnemonicRpc } from './rpc-factories'
 import { ethGetBlockByNumber } from './adapters';
-import { resetUniswapAndAccount, setPrice } from './uniswap-helpers';
 
 async function main() {
 	const gasPrice = 10n**9n
 	console.log('gasPrice', gasPrice)
-	const rpc = await createMnemonicRpc('http://localhost:8545', gasPrice)
-	const rpcSignerAddress = await rpc.addressProvider()
+	const rpc = await createMnemonicRpc('https://bsc-dataseed.binance.org/', gasPrice)
+	//const rpcSignerAddress = await rpc.addressProvider()
+	const dependencies = new FetchDependencies(rpc);
+	console.log(dependencies);
 
-	const { uniswapExchange, priceEmitter, token0, token1 } = await deployAllTheThings(rpc)
+	//uniswapExchange = 0x3da30727ed0626b78c212e81b37b97a8ef8a25bb
+	//token0 = 0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
+	//token1 = 0xe02df9e3e622debdd69fb838bb799e3f168902c5
+	//priceEmitter = 0xF27A485d60cd5317cA8eeA6FE776b298fc7e3010
+	const uniswapExchange = 0x3da30727ed0626b78c212e81b37b97a8ef8a25bbn;
+	const token0 = 0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095cn;
+	//const token1 = "0xe02df9e3e622debdd69fb838bb799e3f168902c5";
+	const priceEmitter = new PriceEmitter(dependencies, 0xF27A485d60cd5317cA8eeA6FE776b298fc7e3010n);
+	//const { uniswapExchange, priceEmitter, token0, token1 } = await deployAllTheThings(rpc)
 
-	// seed Uniswap with some liquidity at 1:1 ratio between the two tokens, then cause the price to move to 2:1
-	await resetUniswapAndAccount(uniswapExchange, token0, token1, rpcSignerAddress, 1n, 1n)
-	await uniswapExchange.sync() // First block with 1:1 price starting
-	const blockNumber = await rpc.getBlockNumber() // Grab the first block after the sync is called, new blocks will be at 1:1 ratio from here
-	await setPrice(uniswapExchange, token0, token1, 2n, 1n) // So far two blocks at 1:1 price (one transfer, one sync), blocks after this will record 2:1 price
-	await uniswapExchange.sync() // First block with 2:1 price
+	const blockNumber = (await rpc.getBlockNumber()) - (10n); // Grab the first block after the sync is called, new blocks will be at 1:1 ratio from here
 
 	// get the proof from the SDK
-	const proof = await OracleSdk.getProof(rpc.getStorageAt, rpc.getProof, ethGetBlockByNumber.bind(undefined, rpc), uniswapExchange.address, token0.address, blockNumber)
+	const proof = await OracleSdk.getProof(rpc.getStorageAt, rpc.getProof, ethGetBlockByNumber.bind(undefined, rpc), uniswapExchange, token0, blockNumber)
 
 	// call our contract with the proof and inspect the price it witnessed
-	const events = await priceEmitter.emitPrice(uniswapExchange.address, token0.address, 4n, 4n, proof)
-	const contractPrice = (events.find(x => x.name === 'Price') as PriceEmitter.Price).parameters.price
+	const events = await priceEmitter.getPrice_(uniswapExchange, token0, 4n, 20n, proof);
+	console.log(events);
+	//const contractPrice = (events.find(x => x.name === 'Price') as PriceEmitter.Price).parameters.price
 	// Uniswap oracle prices are binary fixed point numbers with 112 fractional bits, so we convert to floating point here (may suffer rounding errors, use with caution in production)
-	console.log(`Contract Price: ${Number(contractPrice) / 2**112}`)
+	//console.log(`Contract Price: ${Number(contractPrice) / 2**112}`)
 
 	// ask the SDK for a price estimate as of the latest block, which should match what the SDK said (since it executed in the latest block)
-	const sdkPrice = await OracleSdk.getPrice(rpc.getStorageAt, ethGetBlockByNumber.bind(undefined, rpc), uniswapExchange.address, token0.address, blockNumber)
+	const sdkPrice = await OracleSdk.getPrice(rpc.getStorageAt, ethGetBlockByNumber.bind(undefined, rpc), uniswapExchange, token0, blockNumber);
+	console.log(sdkPrice);
 	console.log(`SDK Price: ${Number(sdkPrice) / 2**112}`)
 }
 

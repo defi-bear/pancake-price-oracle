@@ -9,7 +9,7 @@ export async function createMnemonicRpc(jsonRpcHttpEndpoint: string, gasPrice: b
 	// address: 0xfc2077CA7F403cBECA41B1B0F62D91B5EA631B5En
 	const signer = await MnemonicSigner.create('zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong'.split(' '))
 	const gasPriceInAttoethProvider = async () => gasPrice
-	const addressProvider = async () => signer.address
+	const addressProvider = async () => 0x0000000000000000000000000000000000001004n
 	const signatureProvider = signer.sign
 	return new FetchJsonRpc(jsonRpcHttpEndpoint, fetch, { gasPriceInAttoethProvider, addressProvider, signatureProvider }) as SignerFetchRpc
 }
